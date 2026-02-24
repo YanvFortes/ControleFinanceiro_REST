@@ -1,0 +1,6 @@
+@ControleFinanceiro_REST.API_HostAddress = http://localhost:5189
+
+GET {{ControleFinanceiro_REST.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
