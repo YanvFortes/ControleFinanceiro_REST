@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControleFinanceiro_REST.DAL
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControleFinanceiro_REST.DTO", "ControleFinanceiro_REST.DTO\ControleFinanceiro_REST.DTO.csproj", "{66B1FCF4-264E-4215-B399-FCFF04486EA5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControleFinanceiro_REST.DAO", "ControleFinanceiro_REST.DAO\ControleFinanceiro_REST.DAO.csproj", "{97399645-EC1E-455D-97C7-4AD7937A7448}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{66B1FCF4-264E-4215-B399-FCFF04486EA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{66B1FCF4-264E-4215-B399-FCFF04486EA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{66B1FCF4-264E-4215-B399-FCFF04486EA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97399645-EC1E-455D-97C7-4AD7937A7448}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97399645-EC1E-455D-97C7-4AD7937A7448}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97399645-EC1E-455D-97C7-4AD7937A7448}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97399645-EC1E-455D-97C7-4AD7937A7448}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
