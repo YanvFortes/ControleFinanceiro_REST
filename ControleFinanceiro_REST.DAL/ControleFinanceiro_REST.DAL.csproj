@@ -14,10 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Entities\Interfaces\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\ControleFinanceiro_REST.DAO\ControleFinanceiro_REST.DAO.csproj" />
     <ProjectReference Include="..\ControleFinanceiro_REST.DTO\ControleFinanceiro_REST.DTO.csproj" />
   </ItemGroup>
