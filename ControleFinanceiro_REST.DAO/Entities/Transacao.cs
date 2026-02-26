@@ -10,6 +10,9 @@ public partial class Transacao
     public decimal Valor { get; set; }
     public TipoTransacaoEnum Tipo { get; set; }
 
+    public Guid PessoaId { get; set; }
+    public Pessoa Pessoa { get; set; } = null!;
+
     public Guid UsuarioId { get; set; }
     public Usuario Usuario { get; set; } = null!;
 

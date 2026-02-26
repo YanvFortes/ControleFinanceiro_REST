@@ -145,6 +145,32 @@ public partial class FinanceDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<Pessoa>(entity =>
+        {
+            entity.ToTable("Pessoas");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Nome)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(e => e.DataCriacao)
+                .HasDefaultValueSql("NOW()");
+
+            entity.HasIndex(e => new { e.UsuarioId, e.Nome });
+
+            entity.HasOne(e => e.Usuario)
+                .WithMany(u => u.Pessoas)
+                .HasForeignKey(e => e.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.Transacoes)
+                .WithOne(t => t.Pessoa)
+                .HasForeignKey(t => t.PessoaId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<Transacao>(entity =>
         {
             entity.ToTable("Transacoes");
@@ -167,18 +193,23 @@ public partial class FinanceDbContext : DbContext
                 .HasDefaultValueSql("NOW()");
 
             entity.HasIndex(e => e.UsuarioId);
+            entity.HasIndex(e => e.PessoaId);
             entity.HasIndex(e => e.CategoriaId);
-        });
 
-        modelBuilder.Entity<Tipousuario>(entity =>
-        {
-            entity.ToTable("Tipousuarios");
+            entity.HasOne(e => e.Pessoa)
+                .WithMany(p => p.Transacoes)
+                .HasForeignKey(e => e.PessoaId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Usuario)
+                .WithMany(u => u.Transacoes)
+                .HasForeignKey(e => e.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.Property(e => e.Descricao)
-                .HasMaxLength(200)
-                .IsRequired();
+            entity.HasOne(e => e.Categoria)
+                .WithMany(c => c.Transacoes)
+                .HasForeignKey(e => e.CategoriaId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Usuario>(entity =>

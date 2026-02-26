@@ -51,13 +51,15 @@ builder.Services.AddCors(options =>
 
 //BLL
 builder.Services.AddScoped<IAutenticacaoBLL, AutenticacaoBLL>();
-builder.Services.AddScoped<IUsuarioBLL, UsuarioBLL>();
 builder.Services.AddScoped<ICategoriaBLL, CategoriaBLL>();
-builder.Services.AddScoped<ITransacaoBLL, TransacaoBLL>();
+builder.Services.AddScoped<IPessoaBLL, PessoaBLL>();
 builder.Services.AddScoped<IRoleBLL, RoleBLL>();
+builder.Services.AddScoped<ITransacaoBLL, TransacaoBLL>();
+builder.Services.AddScoped<IUsuarioBLL, UsuarioBLL>();
 
 //DAL
 builder.Services.AddScoped<ICategoriaDAL, CategoriaDAL>();
+builder.Services.AddScoped<IPessoaDAL, PessoaDAL>();
 builder.Services.AddScoped<IRoleDAL, RoleDAL>();
 builder.Services.AddScoped<ITransacaoDAL, TransacaoDAL>();
 builder.Services.AddScoped<ITipoUsuarioDAL, TipoUsuarioDAL>();
@@ -66,13 +68,14 @@ builder.Services.AddScoped<IUsuarioDAL, UsuarioDAL>();
 //Utils
 builder.Services.AddScoped<IEncriptador, Encriptador>();
 builder.Services.AddScoped<IGeradorToken, GeradorToken>();
+builder.Services.AddScoped<IUsuarioContexto, UsuarioContexto>();
 
 //Mapper
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 //Token
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITokenContexto, TokenContexto>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddSignalR().AddJsonProtocol(opt => opt.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 builder.Services.AddAuthentication(options =>
 {

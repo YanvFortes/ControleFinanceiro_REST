@@ -1,0 +1,183 @@
+﻿using ControleFinanceiro_REST.BLL.Entities.Interfaces;
+using ControleFinanceiro_REST.BLL.Utils.Interfaces;
+using ControleFinanceiro_REST.DAL.Entities.Interfaces;
+using ControleFinanceiro_REST.DTO.Entities;
+using ControleFinanceiro_REST.DTO.Utils;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+
+namespace ControleFinanceiro_REST.BLL.Entities;
+
+public class PessoaBLL : IPessoaBLL
+{
+    private readonly IPessoaDAL _dal;
+    private readonly IUsuarioContexto _usuarioContexto;
+
+    public PessoaBLL(
+        IPessoaDAL dal,
+        IUsuarioContexto usuarioContexto)
+    {
+        _dal = dal;
+        _usuarioContexto = usuarioContexto;
+    }
+
+    public async Task<PagedResultDTO<PessoaDTO>> ObterPaginadoAsync(
+        int page,
+        int size,
+        string? search)
+    {
+        if (page <= 0) page = 1;
+        if (size <= 0) size = 10;
+
+        var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+        if (usuarioId == null)
+            return new PagedResultDTO<PessoaDTO>(
+                new List<PessoaDTO>(), 0, search ?? "");
+
+        var query = _dal.GetQuery(true)
+            .Where(p => p.UsuarioId == usuarioId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var like = $"%{search.Trim()}%";
+            query = query.Where(p =>
+                EF.Functions.ILike(p.Nome, like));
+        }
+
+        var total = await query.CountAsync();
+
+        var itens = await query
+            .OrderBy(p => p.Nome)
+            .Skip((page - 1) * size)
+            .Take(size)
+            .Select(p => new PessoaDTO
+            {
+                Id = p.Id,
+                Nome = p.Nome,
+                Idade = p.Idade,
+                DataCriacao = p.DataCriacao,
+                DataEdicao = p.DataEdicao
+            })
+            .ToListAsync();
+
+        return new PagedResultDTO<PessoaDTO>(itens, total, search ?? "");
+    }
+
+    public async Task<PessoaDTO?> ObterPorIdAsync(Guid id)
+    {
+        var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+        if (usuarioId == null)
+            return null;
+
+        return await _dal.GetQuery(true)
+            .Where(p => p.UsuarioId == usuarioId && p.Id == id)
+            .Select(p => new PessoaDTO
+            {
+                Id = p.Id,
+                Nome = p.Nome,
+                Idade = p.Idade,
+                DataCriacao = p.DataCriacao,
+                DataEdicao = p.DataEdicao
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<RetornoDTO<bool>> CriarAsync(PessoaDTO dto)
+    {
+        try
+        {
+            var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+            if (usuarioId == null)
+                return new(false, "Usuário não identificado.");
+
+            if (dto.Idade < 0)
+                return new(false, "Idade inválida.");
+
+            dto.Id = Guid.NewGuid();
+            dto.DataCriacao = DateTime.UtcNow;
+
+            await _dal.CreateAsync(new PessoaDTO
+            {
+                Id = dto.Id,
+                Nome = dto.Nome,
+                Idade = dto.Idade,
+                DataCriacao = dto.DataCriacao,
+                DataEdicao = null
+            });
+
+            return new(true, "Pessoa criada com sucesso.");
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            return new(false, ex.Message);
+#else
+        return new(false, "Erro ao criar pessoa.");
+#endif
+        }
+    }
+
+    public async Task<RetornoDTO<bool>> AtualizarAsync(PessoaDTO dto)
+    {
+        try
+        {
+            var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+            if (usuarioId == null)
+                return new(false, "Usuário não identificado.");
+
+            var existente = await _dal.GetQuery()
+                .FirstOrDefaultAsync(p =>
+                    p.Id == dto.Id &&
+                    p.UsuarioId == usuarioId);
+
+            if (existente == null)
+                return new(false, "Pessoa não encontrada.");
+
+            existente.Nome = dto.Nome;
+            existente.Idade = dto.Idade;
+            existente.DataEdicao = DateTime.UtcNow;
+
+            await _dal.EditAsync(dto.Id, dto);
+
+            return new(true, "Pessoa atualizada.");
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            return new(false, ex.Message);
+#else
+        return new(false, "Erro ao atualizar pessoa.");
+#endif
+        }
+    }
+
+    public async Task<RetornoDTO<bool>> ExcluirAsync(Guid id)
+    {
+        try
+        {
+            var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+            if (usuarioId == null)
+                return new(false, "Usuário não identificado.");
+
+            var existente = await _dal.GetQuery()
+                .FirstOrDefaultAsync(p =>
+                    p.Id == id &&
+                    p.UsuarioId == usuarioId);
+
+            if (existente == null)
+                return new(false, "Pessoa não encontrada.");
+
+            await _dal.DeleteAsync(id);
+
+            return new(true, "Pessoa excluída com sucesso.");
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            return new(false, ex.Message);
+#else
+        return new(false, "Erro ao excluir pessoa.");
+#endif
+        }
+    }
+}
