@@ -19,6 +19,7 @@ public partial class Usuario
     public string AspNetUserId { get; set; } = null!;
     public virtual AspNetUser? User { get; set; }
 
+    public ICollection<Pessoa> Pessoas { get; set; } = new List<Pessoa>();
     public ICollection<Categoria> Categorias { get; set; } = new List<Categoria>();
     public ICollection<Transacao> Transacoes { get; set; } = new List<Transacao>();
 }

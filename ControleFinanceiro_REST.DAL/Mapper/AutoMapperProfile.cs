@@ -10,6 +10,7 @@ public class AutoMapperProfile : Profile
     public AutoMapperProfile()
     {
         CreateMap<Categoria, CategoriaDTO>().ReverseMap();
+        CreateMap<Pessoa, PessoaDTO>().ReverseMap();
         CreateMap<Transacao, TransacaoDTO>().ReverseMap();
         CreateMap<Tipousuario, TipoUsuarioDTO>().ReverseMap();
         CreateMap<Usuario, UsuarioDTO>().ReverseMap();

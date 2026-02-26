@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using ControleFinanceiro_REST.BLL.Utils.Interfaces;
+using Microsoft.AspNetCore.Http;
 
-namespace ControleFinanceiro_REST.BLL.Utils.Interfaces;
+namespace ControleFinanceiro_REST.BLL.Utils;
 
 public class TokenContexto : ITokenContexto
 {

@@ -11,16 +11,19 @@ public class TransacaoBLL : ITransacaoBLL
 {
     private readonly ITransacaoDAL _transacaoDAL;
     private readonly IUsuarioDAL _usuarioDAL;
+    private readonly IPessoaDAL _pessoaDAL;
     private readonly ICategoriaDAL _categoriaDAL;
 
     public TransacaoBLL(
         ITransacaoDAL transacaoDAL,
         IUsuarioDAL usuarioDAL,
-        ICategoriaDAL categoriaDAL)
+        ICategoriaDAL categoriaDAL,
+        IPessoaDAL pessoaDAL)
     {
         _transacaoDAL = transacaoDAL;
         _usuarioDAL = usuarioDAL;
         _categoriaDAL = categoriaDAL;
+        _pessoaDAL = pessoaDAL;
     }
 
     public async Task<RetornoDTO<bool>> CriarAsync(TransacaoDTO dto)
@@ -38,7 +41,8 @@ public class TransacaoBLL : ITransacaoBLL
             if (categoria is null)
                 return new(false, "Categoria não encontrada.");
 
-            if (usuario.Idade < 18 && dto.Tipo == TipoTransacaoEnum.Receita)
+            var pessoa = await _pessoaDAL.GetByIdAsync(dto.PessoaId);
+            if (pessoa?.Idade < 18 && dto.Tipo == TipoTransacaoEnum.Receita)
                 return new(false, "Menores de idade só podem registrar despesas.");
 
             if (categoria.Finalidade != FinalidadeCategoriaEnum.Ambas &&

@@ -4,38 +4,37 @@ using ControleFinanceiro_REST.DAL.Entities.Interfaces;
 using ControleFinanceiro_REST.DTO.Entities;
 using ControleFinanceiro_REST.DTO.Utils;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ControleFinanceiro_REST.BLL.Entities;
 
 public class UsuarioBLL : IUsuarioBLL
 {
     private readonly IUsuarioDAL _dal;
-    private readonly ITokenContexto _tokenContexto;
+    private readonly IUsuarioContexto _usuarioContexto;
 
     public UsuarioBLL(
         IUsuarioDAL dal,
-        ITokenContexto tokenContexto)
+        IUsuarioContexto usuarioContexto)
     {
         _dal = dal;
-        _tokenContexto = tokenContexto;
+        _usuarioContexto = usuarioContexto;
     }
-
-    private string? GetAspNetUserId()
-        => _tokenContexto.ObterClaim(ClaimTypes.NameIdentifier);
 
     public async Task<PagedResultDTO<UsuarioDTO>> ObterPaginadoAsync(
         int page,
         int size,
         string? search)
     {
-        var query = _dal.GetQuery(true);
+        if (page <= 0) page = 1;
+        if (size <= 0) size = 10;
 
+        var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+        if (usuarioId == null)
+            return new PagedResultDTO<UsuarioDTO>(
+                new List<UsuarioDTO>(), 0, search ?? "");
 
-        var aspId = GetAspNetUserId();
-
-        query = query.Where(x => x.AspNetUserId == aspId);
-
+        var query = _dal.GetQuery(true)
+                        .Where(x => x.Id == usuarioId);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -55,8 +54,7 @@ public class UsuarioBLL : IUsuarioBLL
             {
                 Id = x.Id,
                 Nome = x.Nome,
-                Email = x.Email,
-                Idade = x.Idade
+                Email = x.Email
             })
             .ToListAsync();
 
@@ -65,25 +63,19 @@ public class UsuarioBLL : IUsuarioBLL
 
     public async Task<UsuarioDTO?> ObterPorIdAsync(Guid id)
     {
-        var query = _dal.GetQuery(true);
+        var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+        if (usuarioId == null || usuarioId != id)
+            return null;
 
-
-        var aspId = GetAspNetUserId();
-        query = query.Where(x => x.AspNetUserId == aspId);
-
-
-        var usuario = await query
+        return await _dal.GetQuery(true)
             .Where(x => x.Id == id)
             .Select(x => new UsuarioDTO
             {
                 Id = x.Id,
                 Nome = x.Nome,
-                Email = x.Email,
-                Idade = x.Idade
+                Email = x.Email
             })
             .FirstOrDefaultAsync();
-
-        return usuario;
     }
 
     public async Task<RetornoDTO<bool>> CriarAsync(UsuarioDTO dto)
@@ -98,7 +90,11 @@ public class UsuarioBLL : IUsuarioBLL
         }
         catch (Exception ex)
         {
+#if DEBUG
             return new(false, ex.Message);
+#else
+            return new(false, "Erro ao criar usuário.");
+#endif
         }
     }
 
@@ -106,15 +102,13 @@ public class UsuarioBLL : IUsuarioBLL
     {
         try
         {
+            var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+            if (usuarioId == null || usuarioId != dto.Id)
+                return new(false, "Acesso negado.");
+
             var existente = await _dal.GetByIdAsync(dto.Id);
             if (existente == null)
                 return new(false, "Usuário não encontrado.");
-
-
-            var aspId = GetAspNetUserId();
-            if (existente.AspNetUserId != aspId)
-                return new(false, "Acesso negado.");
-
 
             dto.DataEdicao = DateTime.UtcNow;
 
@@ -123,7 +117,11 @@ public class UsuarioBLL : IUsuarioBLL
         }
         catch (Exception ex)
         {
+#if DEBUG
             return new(false, ex.Message);
+#else
+            return new(false, "Erro ao atualizar usuário.");
+#endif
         }
     }
 
@@ -131,6 +129,10 @@ public class UsuarioBLL : IUsuarioBLL
     {
         try
         {
+            var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+            if (usuarioId == null || usuarioId != id)
+                return new(false, "Acesso negado.");
+
             var usuario = await _dal.GetByIdAsync(id);
             if (usuario == null)
                 return new(false, "Usuário não encontrado.");
@@ -140,7 +142,11 @@ public class UsuarioBLL : IUsuarioBLL
         }
         catch (Exception ex)
         {
+#if DEBUG
             return new(false, ex.Message);
+#else
+            return new(false, "Erro ao excluir usuário.");
+#endif
         }
     }
 }
