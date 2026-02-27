@@ -1,4 +1,6 @@
-﻿using ControleFinanceiro_REST.BLL.Entities.Interfaces;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using ControleFinanceiro_REST.BLL.Entities.Interfaces;
 using ControleFinanceiro_REST.DAL.Entities.Interfaces;
 using ControleFinanceiro_REST.DTO.Entities;
 using ControleFinanceiro_REST.DTO.Enums;
@@ -13,17 +15,87 @@ public class TransacaoBLL : ITransacaoBLL
     private readonly IUsuarioDAL _usuarioDAL;
     private readonly IPessoaDAL _pessoaDAL;
     private readonly ICategoriaDAL _categoriaDAL;
+    private readonly IMapper _mapper;
 
     public TransacaoBLL(
         ITransacaoDAL transacaoDAL,
         IUsuarioDAL usuarioDAL,
         ICategoriaDAL categoriaDAL,
-        IPessoaDAL pessoaDAL)
+        IPessoaDAL pessoaDAL,
+        IMapper mapper)
     {
         _transacaoDAL = transacaoDAL;
         _usuarioDAL = usuarioDAL;
         _categoriaDAL = categoriaDAL;
         _pessoaDAL = pessoaDAL;
+        _mapper = mapper;
+    }
+
+
+    public async Task<PagedResultDTO<TransacaoDTO>> ObterPaginadoAsync(
+        int page,
+        int pageSize,
+        string? search,
+        Guid? usuarioId = null)
+    {
+        var query = _transacaoDAL.GetQuery(true,
+            x => x.Usuario,
+            x => x.Categoria,
+            x => x.Pessoa);
+
+        if (usuarioId.HasValue)
+            query = query.Where(x => x.UsuarioId == usuarioId.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.ToLower();
+            query = query.Where(x =>
+                x.Descricao.ToLower().Contains(s));
+        }
+
+        var total = await query.CountAsync();
+
+        var itens = await query
+            .OrderByDescending(x => x.DataCriacao)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ProjectTo<TransacaoDTO>(_mapper.ConfigurationProvider)
+            .ToListAsync();
+
+        return new(itens, total, search ?? "");
+    }
+
+    public async Task<TotaisTransacaoDTO> ObterTotaisAsync(Guid? usuarioId = null)
+    {
+        var query = _transacaoDAL.GetQuery();
+
+        if (usuarioId.HasValue)
+            query = query.Where(x => x.UsuarioId == usuarioId.Value);
+
+        var totalReceitas = await query
+            .Where(x => x.Tipo == TipoTransacaoEnum.Receita)
+            .SumAsync(x => (decimal?)x.Valor) ?? 0m;
+
+        var totalDespesas = await query
+            .Where(x => x.Tipo == TipoTransacaoEnum.Despesa)
+            .SumAsync(x => (decimal?)x.Valor) ?? 0m;
+
+        return new TotaisTransacaoDTO
+        {
+            TotalReceitas = totalReceitas,
+            TotalDespesas = totalDespesas
+        };
+    }
+
+    public async Task<TransacaoDTO?> ObterPorIdAsync(Guid id)
+    {
+        return await _transacaoDAL.GetQuery(true,
+                x => x.Usuario,
+                x => x.Categoria,
+                x => x.Pessoa)
+            .Where(x => x.Id == id)
+            .ProjectTo<TransacaoDTO>(_mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<RetornoDTO<bool>> CriarAsync(TransacaoDTO dto)
@@ -109,70 +181,4 @@ public class TransacaoBLL : ITransacaoBLL
         }
     }
 
-    public async Task<PagedResultDTO<TransacaoDTO>> ObterPaginadoAsync(
-        int page,
-        int pageSize,
-        string? search,
-        Guid? usuarioId = null)
-    {
-        var query = _transacaoDAL.GetQuery(true,
-            x => x.Usuario,
-            x => x.Categoria);
-
-        if (usuarioId.HasValue)
-            query = query.Where(x => x.UsuarioId == usuarioId.Value);
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var s = search.ToLower();
-            query = query.Where(x =>
-                x.Descricao.ToLower().Contains(s));
-        }
-
-        var total = await query.CountAsync();
-
-        var itens = await query
-            .OrderByDescending(x => x.DataCriacao)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(x => new TransacaoDTO
-            {
-                Id = x.Id,
-                Descricao = x.Descricao,
-                Valor = x.Valor,
-                Tipo = x.Tipo,
-                UsuarioId = x.UsuarioId,
-                CategoriaId = x.CategoriaId,
-                DataCriacao = x.DataCriacao,
-                DataEdicao = x.DataEdicao
-            })
-            .ToListAsync();
-
-        return new PagedResultDTO<TransacaoDTO>(itens, total, search ?? "");
-    }
-
-    public async Task<TotaisTransacaoDTO> ObterTotaisAsync(Guid? usuarioId = null)
-    {
-        var query = _transacaoDAL.GetQuery();
-
-        if (usuarioId.HasValue)
-            query = query.Where(x => x.UsuarioId == usuarioId.Value);
-
-        var totalReceitas = await query
-            .Where(x => x.Tipo == TipoTransacaoEnum.Receita)
-            .SumAsync(x => (decimal?)x.Valor) ?? 0m;
-
-        var totalDespesas = await query
-            .Where(x => x.Tipo == TipoTransacaoEnum.Despesa)
-            .SumAsync(x => (decimal?)x.Valor) ?? 0m;
-
-        return new TotaisTransacaoDTO
-        {
-            TotalReceitas = totalReceitas,
-            TotalDespesas = totalDespesas
-        };
-    }
-
-    public async Task<TransacaoDTO?> ObterPorIdAsync(Guid id)
-        => await _transacaoDAL.GetByIdAsync(id);
 }

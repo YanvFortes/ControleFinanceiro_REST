@@ -1,4 +1,6 @@
-﻿using ControleFinanceiro_REST.BLL.Entities.Interfaces;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using ControleFinanceiro_REST.BLL.Entities.Interfaces;
 using ControleFinanceiro_REST.DAL.Entities.Interfaces;
 using ControleFinanceiro_REST.DTO.Entities;
 using ControleFinanceiro_REST.DTO.Utils;
@@ -10,13 +12,54 @@ public class CategoriaBLL : ICategoriaBLL
 {
     private readonly ICategoriaDAL _categoriaDAL;
     private readonly ITransacaoDAL _transacaoDAL;
+    private readonly IMapper _mapper;
 
     public CategoriaBLL(
         ICategoriaDAL categoriaDAL,
-        ITransacaoDAL transacaoDAL)
+        ITransacaoDAL transacaoDAL,
+        IMapper mapper)
     {
         _categoriaDAL = categoriaDAL;
         _transacaoDAL = transacaoDAL;
+        _mapper = mapper;
+    }
+
+    public async Task<CategoriaDTO?> ObterPorIdAsync(Guid id)
+    {
+        return await _categoriaDAL.GetQuery()
+            .Where(x => x.Id == id)
+            .ProjectTo<CategoriaDTO>(_mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<PagedResultDTO<CategoriaDTO>> ObterPaginadoAsync(
+        int page,
+        int pageSize,
+        string? search,
+        Guid? usuarioId = null)
+    {
+        var query = _categoriaDAL.GetQuery();
+
+        if (usuarioId.HasValue)
+            query = query.Where(x => x.UsuarioId == usuarioId.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.ToLower();
+            query = query.Where(x =>
+                x.Descricao.ToLower().Contains(s));
+        }
+
+        var total = await query.CountAsync();
+
+        var itens = await query
+            .OrderBy(x => x.Descricao)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ProjectTo<CategoriaDTO>(_mapper.ConfigurationProvider)
+            .ToListAsync();
+
+        return new PagedResultDTO<CategoriaDTO>(itens, total, search ?? "");
     }
 
     public async Task<RetornoDTO<bool>> CriarAsync(CategoriaDTO dto)
@@ -101,46 +144,5 @@ public class CategoriaBLL : ICategoriaBLL
             return new(false, "Erro ao excluir categoria.");
 #endif
         }
-    }
-
-    public async Task<CategoriaDTO?> ObterPorIdAsync(Guid id)
-        => await _categoriaDAL.GetByIdAsync(id);
-
-    public async Task<PagedResultDTO<CategoriaDTO>> ObterPaginadoAsync(
-        int page,
-        int pageSize,
-        string? search,
-        Guid? usuarioId = null)
-    {
-        var query = _categoriaDAL.GetQuery();
-
-        if (usuarioId.HasValue)
-            query = query.Where(x => x.UsuarioId == usuarioId.Value);
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var s = search.ToLower();
-            query = query.Where(x =>
-                x.Descricao.ToLower().Contains(s));
-        }
-
-        var total = await query.CountAsync();
-
-        var itens = await query
-            .OrderBy(x => x.Descricao)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(x => new CategoriaDTO
-            {
-                Id = x.Id,
-                Descricao = x.Descricao,
-                Finalidade = x.Finalidade,
-                UsuarioId = x.UsuarioId,
-                DataCriacao = x.DataCriacao,
-                DataEdicao = x.DataEdicao
-            })
-            .ToListAsync();
-
-        return new PagedResultDTO<CategoriaDTO>(itens, total, search ?? "");
     }
 }
