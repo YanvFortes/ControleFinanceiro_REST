@@ -84,16 +84,10 @@ public class PessoaBLL : IPessoaBLL
                 return new(false, "Idade inválida.");
 
             dto.Id = Guid.NewGuid();
+            dto.UsuarioId = usuarioId.Value;
             dto.DataCriacao = DateTime.UtcNow;
 
-            await _dal.CreateAsync(new PessoaDTO
-            {
-                Id = dto.Id,
-                Nome = dto.Nome,
-                Idade = dto.Idade,
-                DataCriacao = dto.DataCriacao,
-                DataEdicao = null
-            });
+            await _dal.CreateAsync(dto);
 
             return new(true, "Pessoa criada com sucesso.");
         }
@@ -106,7 +100,6 @@ public class PessoaBLL : IPessoaBLL
 #endif
         }
     }
-
     public async Task<RetornoDTO<bool>> AtualizarAsync(PessoaDTO dto)
     {
         try

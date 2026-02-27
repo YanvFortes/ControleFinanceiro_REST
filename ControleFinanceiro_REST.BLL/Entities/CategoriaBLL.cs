@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using ControleFinanceiro_REST.BLL.Entities.Interfaces;
+using ControleFinanceiro_REST.BLL.Utils;
+using ControleFinanceiro_REST.BLL.Utils.Interfaces;
 using ControleFinanceiro_REST.DAL.Entities.Interfaces;
 using ControleFinanceiro_REST.DTO.Entities;
 using ControleFinanceiro_REST.DTO.Utils;
@@ -12,15 +14,18 @@ public class CategoriaBLL : ICategoriaBLL
 {
     private readonly ICategoriaDAL _categoriaDAL;
     private readonly ITransacaoDAL _transacaoDAL;
+    private readonly IUsuarioContexto _usuarioContexto;
     private readonly IMapper _mapper;
 
     public CategoriaBLL(
         ICategoriaDAL categoriaDAL,
         ITransacaoDAL transacaoDAL,
+        IUsuarioContexto usuarioContexto,
         IMapper mapper)
     {
         _categoriaDAL = categoriaDAL;
         _transacaoDAL = transacaoDAL;
+        _usuarioContexto = usuarioContexto;
         _mapper = mapper;
     }
 
@@ -69,16 +74,21 @@ public class CategoriaBLL : ICategoriaBLL
             if (string.IsNullOrWhiteSpace(dto.Descricao))
                 return new(false, "Descrição é obrigatória.");
 
+            var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+            if (usuarioId == null)
+                return new(false, "Usuário não identificado.");
+
             var existe = await _categoriaDAL
                 .GetQuery()
                 .AnyAsync(x =>
-                    x.UsuarioId == dto.UsuarioId &&
+                    x.UsuarioId == usuarioId &&
                     x.Descricao.ToLower() == dto.Descricao.ToLower());
 
             if (existe)
-                return new(false, "Já existe uma categoria com essa descrição para este usuário.");
+                return new(false, "Já existe uma categoria com essa descrição.");
 
             dto.Id = Guid.NewGuid();
+            dto.UsuarioId = usuarioId.Value;
             dto.DataCriacao = DateTime.UtcNow;
 
             await _categoriaDAL.CreateAsync(dto);
@@ -88,9 +98,9 @@ public class CategoriaBLL : ICategoriaBLL
         catch (Exception ex)
         {
 #if DEBUG
-            return new(false, $"Erro ao criar categoria: {ex.Message}");
+            return new(false, ex.Message);
 #else
-            return new(false, "Erro ao criar categoria.");
+        return new(false, "Erro ao criar categoria.");
 #endif
         }
     }
