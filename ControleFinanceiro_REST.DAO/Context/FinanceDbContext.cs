@@ -35,7 +35,7 @@ public partial class FinanceDbContext : DbContext
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-       => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=FinanceDb;Username=postgres;Password=ahbs0L4_wuMf0-Ga419OpSb23FaCU;Ssl Mode=Require;Trust Server Certificate=true;");
+       => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=financeDb;Username=postgres;Password=postgres;Ssl Mode=Disable;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -224,10 +224,6 @@ public partial class FinanceDbContext : DbContext
 
             entity.Property(e => e.Email)
                 .HasMaxLength(200)
-                .IsRequired();
-
-            entity.Property(e => e.Senha)
-                .HasMaxLength(500)
                 .IsRequired();
 
             entity.Property(e => e.DataCriacao)

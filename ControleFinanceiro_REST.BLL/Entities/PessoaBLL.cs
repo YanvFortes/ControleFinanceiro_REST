@@ -1,10 +1,11 @@
-﻿using ControleFinanceiro_REST.BLL.Entities.Interfaces;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using ControleFinanceiro_REST.BLL.Entities.Interfaces;
 using ControleFinanceiro_REST.BLL.Utils.Interfaces;
 using ControleFinanceiro_REST.DAL.Entities.Interfaces;
 using ControleFinanceiro_REST.DTO.Entities;
 using ControleFinanceiro_REST.DTO.Utils;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ControleFinanceiro_REST.BLL.Entities;
 
@@ -12,13 +13,16 @@ public class PessoaBLL : IPessoaBLL
 {
     private readonly IPessoaDAL _dal;
     private readonly IUsuarioContexto _usuarioContexto;
+    private readonly IMapper _mapper;
 
     public PessoaBLL(
         IPessoaDAL dal,
-        IUsuarioContexto usuarioContexto)
+        IUsuarioContexto usuarioContexto,
+        IMapper mapper)
     {
         _dal = dal;
         _usuarioContexto = usuarioContexto;
+        _mapper = mapper;
     }
 
     public async Task<PagedResultDTO<PessoaDTO>> ObterPaginadoAsync(
@@ -50,14 +54,7 @@ public class PessoaBLL : IPessoaBLL
             .OrderBy(p => p.Nome)
             .Skip((page - 1) * size)
             .Take(size)
-            .Select(p => new PessoaDTO
-            {
-                Id = p.Id,
-                Nome = p.Nome,
-                Idade = p.Idade,
-                DataCriacao = p.DataCriacao,
-                DataEdicao = p.DataEdicao
-            })
+            .ProjectTo<PessoaDTO>(_mapper.ConfigurationProvider)
             .ToListAsync();
 
         return new PagedResultDTO<PessoaDTO>(itens, total, search ?? "");
@@ -71,14 +68,7 @@ public class PessoaBLL : IPessoaBLL
 
         return await _dal.GetQuery(true)
             .Where(p => p.UsuarioId == usuarioId && p.Id == id)
-            .Select(p => new PessoaDTO
-            {
-                Id = p.Id,
-                Nome = p.Nome,
-                Idade = p.Idade,
-                DataCriacao = p.DataCriacao,
-                DataEdicao = p.DataEdicao
-            })
+            .ProjectTo<PessoaDTO>(_mapper.ConfigurationProvider)
             .FirstOrDefaultAsync();
     }
 

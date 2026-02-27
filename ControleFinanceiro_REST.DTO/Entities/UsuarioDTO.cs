@@ -4,8 +4,8 @@ public class UsuarioDTO
 {
     public Guid Id { get; set; }
     public string Nome { get; set; } = null!;
-    public int Idade { get; set; }
     public int TipoUsuarioId { get; set; }
+    public string TipoUsuario { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string Senha { get; set; } = null!;
     public DateTime DataCriacao { get; set; }
