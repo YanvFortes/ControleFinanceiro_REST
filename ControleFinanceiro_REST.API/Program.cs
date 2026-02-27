@@ -52,6 +52,7 @@ builder.Services.AddCors(options =>
 //BLL
 builder.Services.AddScoped<IAutenticacaoBLL, AutenticacaoBLL>();
 builder.Services.AddScoped<ICategoriaBLL, CategoriaBLL>();
+builder.Services.AddScoped<IDashboardBLL, DashboardBLL>();
 builder.Services.AddScoped<IPessoaBLL, PessoaBLL>();
 builder.Services.AddScoped<IRoleBLL, RoleBLL>();
 builder.Services.AddScoped<ITransacaoBLL, TransacaoBLL>();

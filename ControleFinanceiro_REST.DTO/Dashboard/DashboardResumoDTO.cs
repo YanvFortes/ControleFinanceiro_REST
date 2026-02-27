@@ -1,6 +1,6 @@
-﻿namespace ControleFinanceiro_REST.DTO.Utils;
+﻿namespace ControleFinanceiro_REST.DTO.Dashboard;
 
-public class TotaisTransacaoDTO
+public class DashboardResumoDTO
 {
     public decimal TotalReceitas { get; set; }
     public decimal TotalDespesas { get; set; }

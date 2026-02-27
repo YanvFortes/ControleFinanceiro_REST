@@ -60,11 +60,4 @@ public class TransacoesController : ControllerBase
     [HttpDelete("Deletar/{id:guid}")]
     public async Task<ActionResult<RetornoDTO<bool>>> Delete(Guid id)
         => Ok(await _transacaoBll.ExcluirAsync(id));
-
-#if !DEBUG
-    [Authorize]
-#endif
-    [HttpGet("Totais")]
-    public async Task<ActionResult<TotaisTransacaoDTO>> Totais()
-        => Ok(await _transacaoBll.ObterTotaisAsync());
 }

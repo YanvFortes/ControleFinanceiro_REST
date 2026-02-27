@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using ControleFinanceiro_REST.BLL.Entities.Interfaces;
+using ControleFinanceiro_REST.BLL.Utils.Interfaces;
 using ControleFinanceiro_REST.DAL.Entities.Interfaces;
 using ControleFinanceiro_REST.DTO.Entities;
 using ControleFinanceiro_REST.DTO.Enums;
@@ -15,6 +16,7 @@ public class TransacaoBLL : ITransacaoBLL
     private readonly IUsuarioDAL _usuarioDAL;
     private readonly IPessoaDAL _pessoaDAL;
     private readonly ICategoriaDAL _categoriaDAL;
+    private readonly IUsuarioContexto _usuarioContexto;
     private readonly IMapper _mapper;
 
     public TransacaoBLL(
@@ -22,26 +24,31 @@ public class TransacaoBLL : ITransacaoBLL
         IUsuarioDAL usuarioDAL,
         ICategoriaDAL categoriaDAL,
         IPessoaDAL pessoaDAL,
-        IMapper mapper)
+        IMapper mapper,
+        IUsuarioContexto usuarioContexto)
     {
         _transacaoDAL = transacaoDAL;
         _usuarioDAL = usuarioDAL;
         _categoriaDAL = categoriaDAL;
         _pessoaDAL = pessoaDAL;
         _mapper = mapper;
+        _usuarioContexto = usuarioContexto;
     }
-
 
     public async Task<PagedResultDTO<TransacaoDTO>> ObterPaginadoAsync(
         int page,
         int pageSize,
-        string? search,
-        Guid? usuarioId = null)
+        string? search)
     {
+        var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+        if (usuarioId == null)
+            return new(new List<TransacaoDTO>(), 0, search ?? "");
+
         var query = _transacaoDAL.GetQuery(true,
             x => x.Usuario,
             x => x.Categoria,
-            x => x.Pessoa);
+            x => x.Pessoa)
+            .Where(x => x.UsuarioId == usuarioId);
 
         if (usuarioId.HasValue)
             query = query.Where(x => x.UsuarioId == usuarioId.Value);
@@ -65,28 +72,6 @@ public class TransacaoBLL : ITransacaoBLL
         return new(itens, total, search ?? "");
     }
 
-    public async Task<TotaisTransacaoDTO> ObterTotaisAsync(Guid? usuarioId = null)
-    {
-        var query = _transacaoDAL.GetQuery();
-
-        if (usuarioId.HasValue)
-            query = query.Where(x => x.UsuarioId == usuarioId.Value);
-
-        var totalReceitas = await query
-            .Where(x => x.Tipo == TipoTransacaoEnum.Receita)
-            .SumAsync(x => (decimal?)x.Valor) ?? 0m;
-
-        var totalDespesas = await query
-            .Where(x => x.Tipo == TipoTransacaoEnum.Despesa)
-            .SumAsync(x => (decimal?)x.Valor) ?? 0m;
-
-        return new TotaisTransacaoDTO
-        {
-            TotalReceitas = totalReceitas,
-            TotalDespesas = totalDespesas
-        };
-    }
-
     public async Task<TransacaoDTO?> ObterPorIdAsync(Guid id)
     {
         return await _transacaoDAL.GetQuery(true,
@@ -105,24 +90,45 @@ public class TransacaoBLL : ITransacaoBLL
             if (dto.Valor <= 0)
                 return new(false, "Valor deve ser maior que zero.");
 
-            var usuario = await _usuarioDAL.GetByIdAsync(dto.UsuarioId);
-            if (usuario is null)
-                return new(false, "Usuário não encontrado.");
+            var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+            if (usuarioId == null)
+                return new(false, "Usuário não identificado.");
 
-            var categoria = await _categoriaDAL.GetByIdAsync(dto.CategoriaId);
-            if (categoria is null)
-                return new(false, "Categoria não encontrada.");
+            var pessoa = await _pessoaDAL.GetQuery()
+                .FirstOrDefaultAsync(p =>
+                    p.Id == dto.PessoaId &&
+                    p.UsuarioId == usuarioId);
 
-            var pessoa = await _pessoaDAL.GetByIdAsync(dto.PessoaId);
-            if (pessoa?.Idade < 18 && dto.Tipo == TipoTransacaoEnum.Receita)
+            if (pessoa == null)
+                return new(false, "Pessoa inválida.");
+
+            var categoria = await _categoriaDAL.GetQuery()
+                .FirstOrDefaultAsync(c =>
+                    c.Id == dto.CategoriaId &&
+                    c.UsuarioId == usuarioId);
+
+            if (categoria == null)
+                return new(false, "Categoria inválida.");
+
+            if (pessoa.Idade < 18 && dto.Tipo == TipoTransacaoEnum.Receita)
                 return new(false, "Menores de idade só podem registrar despesas.");
 
-            if (categoria.Finalidade != FinalidadeCategoriaEnum.Ambas &&
-                categoria.Finalidade != (FinalidadeCategoriaEnum)dto.Tipo)
-                return new(false, "Categoria incompatível com o tipo da transação.");
-
             dto.Id = Guid.NewGuid();
-            dto.DataCriacao = DateTime.UtcNow;
+            dto.UsuarioId = usuarioId.Value;
+            dto.Tipo = (TipoTransacaoEnum)categoria.Finalidade;
+            var dataCriacao = dto.DataCriacao;
+
+            if (dataCriacao == default)
+            {
+                dataCriacao = DateTime.Now;
+            }
+            else
+            {
+                if (dataCriacao > DateTime.Now)
+                    return new(false, "Data da transação não pode ser futura.");
+            }
+
+            dto.DataCriacao = dataCriacao.AddHours(3);
 
             await _transacaoDAL.CreateAsync(dto);
 
@@ -131,9 +137,9 @@ public class TransacaoBLL : ITransacaoBLL
         catch (Exception ex)
         {
 #if DEBUG
-            return new(false, $"Erro ao criar transação: {ex.Message}");
+            return new(false, ex.Message);
 #else
-            return new(false, "Erro ao criar transação.");
+        return new(false, "Erro ao criar transação.");
 #endif
         }
     }
@@ -146,7 +152,7 @@ public class TransacaoBLL : ITransacaoBLL
             if (existente is null)
                 return new(false, "Transação não encontrada.");
 
-            dto.DataEdicao = DateTime.UtcNow;
+            dto.DataEdicao = DateTime.Now;
 
             await _transacaoDAL.EditAsync(dto.Id, dto);
 
