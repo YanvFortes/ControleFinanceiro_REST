@@ -1,5 +1,6 @@
 ﻿using ControleFinanceiro_REST.BLL.Entities.Interfaces;
 using ControleFinanceiro_REST.DTO.Entities;
+using ControleFinanceiro_REST.DTO.Request;
 using ControleFinanceiro_REST.DTO.Utils;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,7 +31,7 @@ public class UsuariosController : ControllerBase
 #if !DEBUG
         [Authorize]
 #endif
-    [HttpGet("GetById/{id:int}")]
+    [HttpGet("GetById/{id:guid}")]
     public async Task<ActionResult<UsuarioDTO>> Obter(Guid id)
         => Ok(await _usuarioBll.ObterPorIdAsync(id));
 
@@ -39,7 +40,7 @@ public class UsuariosController : ControllerBase
         [Authorize(Roles = "administrador, suporte, gerente, gerente master")]
 #endif
     [HttpPost("Cadastrar")]
-    public async Task<ActionResult<RetornoDTO<bool>>> Cadastrar([FromBody] UsuarioDTO dto)
+    public async Task<ActionResult<RetornoDTO<bool>>> Cadastrar([FromBody] CriarUsuarioRequestDTO dto)
     {
         var retorno = await _usuarioBll.CriarAsync(dto);
         return Ok(retorno);
@@ -48,8 +49,8 @@ public class UsuariosController : ControllerBase
 #if !DEBUG
              [Authorize(Roles = "administrador, suporte")]
 #endif
-    [HttpPut("Editar/{id:int}")]
-    public async Task<ActionResult<RetornoDTO<bool>>> Editar(Guid id, [FromBody] UsuarioDTO dto)
+    [HttpPut("Editar/{id:guid}")]
+    public async Task<ActionResult<RetornoDTO<bool>>> Editar(Guid id, [FromBody] AtualizarUsuarioRequestDTO dto)
     {
         dto.Id = id;
         return Ok(await _usuarioBll.AtualizarAsync(dto));
@@ -58,7 +59,7 @@ public class UsuariosController : ControllerBase
 #if !DEBUG
             [Authorize(Roles = "administrador")]
 #endif
-    [HttpDelete("Deletar/{id:int}")]
+    [HttpDelete("Deletar/{id:guid}")]
     public async Task<ActionResult<RetornoDTO<bool>>> Delete(Guid id) =>
         Ok(await _usuarioBll.ExcluirAsync(id));
 

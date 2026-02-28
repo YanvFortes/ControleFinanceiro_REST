@@ -51,12 +51,20 @@ public class BaseDAL<TEntity, TDTO>
 
     public virtual async Task<TDTO> CreateAsync(TDTO dto)
     {
-        var entity = Mapper.Map<TEntity>(dto);
+        try
+        {
+            var entity = Mapper.Map<TEntity>(dto);
 
-        await DbSet.AddAsync(entity);
-        await DataContext.SaveChangesAsync();
+            await DbSet.AddAsync(entity);
+            await DataContext.SaveChangesAsync();
 
-        return Mapper.Map<TDTO>(entity);
+            return Mapper.Map<TDTO>(entity);
+        }
+        catch (DbUpdateException ex)
+        {
+            var root = ex.GetBaseException();
+            throw new Exception(root.Message, root);
+        }
     }
 
     public virtual async Task<TDTO?> EditAsync(Guid id, TDTO dto)

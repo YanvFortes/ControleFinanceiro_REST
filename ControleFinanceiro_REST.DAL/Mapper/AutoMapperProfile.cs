@@ -13,16 +13,7 @@ public class AutoMapperProfile : Profile
         CreateMap<Pessoa, PessoaDTO>().ReverseMap();
         CreateMap<Transacao, TransacaoDTO>().ReverseMap();
         CreateMap<Tipousuario, TipoUsuarioDTO>().ReverseMap();
-
-        CreateMap<Usuario, UsuarioDTO>()
-            .ForMember(dest => dest.TipoUsuario,
-                opt => opt.MapFrom(src => src.TipoUsuario.Descricao))
-            .ReverseMap()
-            .ForMember(dest => dest.TipoUsuario, opt => opt.Ignore())
-            .ForMember(dest => dest.User, opt => opt.Ignore())
-            .ForMember(dest => dest.Pessoas, opt => opt.Ignore())
-            .ForMember(dest => dest.Categorias, opt => opt.Ignore())
-            .ForMember(dest => dest.Transacoes, opt => opt.Ignore());
+        CreateMap<Usuario, UsuarioDTO>().ReverseMap();
 
         CreateMap<IdentityRole, RoleDTO>().ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         CreateMap<RoleDTO, IdentityRole>()

@@ -5,6 +5,7 @@ using ControleFinanceiro_REST.BLL.Utils.Interfaces;
 using ControleFinanceiro_REST.DAL.Entities.Interfaces;
 using ControleFinanceiro_REST.DAO;
 using ControleFinanceiro_REST.DTO.Entities;
+using ControleFinanceiro_REST.DTO.Request;
 using ControleFinanceiro_REST.DTO.Utils;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -45,8 +46,24 @@ public class UsuarioBLL : IUsuarioBLL
         if (usuarioId == null)
             return new(new List<UsuarioDTO>(), 0, search ?? "");
 
-        var query = _dal.GetQuery(true)
-                        .Where(x => x.Id == usuarioId);
+        var usuarioLogado = await _dal.GetQuery(false)
+            .FirstOrDefaultAsync(x => x.Id == usuarioId);
+
+        if (usuarioLogado == null)
+            return new(new List<UsuarioDTO>(), 0, search ?? "");
+
+        var identityUser = await _userManager
+            .FindByIdAsync(usuarioLogado.AspNetUserId);
+
+        var isAdmin = identityUser != null &&
+                      await _userManager.IsInRoleAsync(identityUser, "administrador");
+
+        var query = _dal.GetQuery(true);
+
+        if (!isAdmin)
+        {
+            query = query.Where(x => x.Id == usuarioId);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -71,7 +88,22 @@ public class UsuarioBLL : IUsuarioBLL
     public async Task<UsuarioDTO?> ObterPorIdAsync(Guid id)
     {
         var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
-        if (usuarioId == null || usuarioId != id)
+        if (usuarioId == null)
+            return null;
+
+        var usuarioLogado = await _dal.GetQuery(false)
+            .FirstOrDefaultAsync(x => x.Id == usuarioId);
+
+        if (usuarioLogado == null)
+            return null;
+
+        var identityUser = await _userManager
+            .FindByIdAsync(usuarioLogado.AspNetUserId);
+
+        var isAdmin = identityUser != null &&
+                      await _userManager.IsInRoleAsync(identityUser, "administrador");
+
+        if (!isAdmin && usuarioId != id)
             return null;
 
         return await _dal.GetQuery(true)
@@ -80,7 +112,7 @@ public class UsuarioBLL : IUsuarioBLL
             .FirstOrDefaultAsync();
     }
 
-    public async Task<RetornoDTO<bool>> CriarAsync(UsuarioDTO dto)
+    public async Task<RetornoDTO<bool>> CriarAsync(CriarUsuarioRequestDTO dto)
     {
         try
         {
@@ -95,23 +127,33 @@ public class UsuarioBLL : IUsuarioBLL
                 Email = email
             };
 
-            var result = await _userManager.CreateAsync(identityUser, dto.Senha!);
+            var result = await _userManager.CreateAsync(identityUser, dto.Senha);
 
             if (!result.Succeeded)
                 return new(false, string.Join(" | ", result.Errors.Select(e => e.Description)));
 
-            var roleName = dto.TipoUsuario;
+            var roleName = ResolverNomeRole(dto.TipoUsuarioId);
+
+            if (string.IsNullOrWhiteSpace(roleName))
+                return new(false, "Tipo de usuário inválido.");
 
             if (!await _roleManager.RoleExistsAsync(roleName))
                 await _roleManager.CreateAsync(new IdentityRole(roleName));
 
             await _userManager.AddToRoleAsync(identityUser, roleName);
 
-            dto.Id = Guid.NewGuid();
-            dto.DataCriacao = DateTime.UtcNow;
-            dto.AspNetUserId = identityUser.Id;
+            var usuario = new UsuarioDTO
+            {
+                Id = Guid.NewGuid(),
+                Nome = dto.Nome,
+                Email = email,
+                TipoUsuarioId = dto.TipoUsuarioId,
+                AspNetUserId = identityUser.Id,
+                DataCriacao = DateTime.UtcNow,
+                DataEdicao = DateTime.UtcNow
+            };
 
-            await _dal.CreateAsync(dto);
+            await _dal.CreateAsync(usuario);
 
             return new(true, "Usuário criado com sucesso.");
         }
@@ -120,12 +162,12 @@ public class UsuarioBLL : IUsuarioBLL
 #if DEBUG
             return new(false, ex.Message);
 #else
-            return new(false, "Erro ao criar usuário.");
+        return new(false, "Erro ao criar usuário.");
 #endif
         }
     }
 
-    public async Task<RetornoDTO<bool>> AtualizarAsync(UsuarioDTO dto)
+    public async Task<RetornoDTO<bool>> AtualizarAsync(AtualizarUsuarioRequestDTO dto)
     {
         try
         {
@@ -137,8 +179,10 @@ public class UsuarioBLL : IUsuarioBLL
             if (identityUser == null)
                 return new(false, "Usuário Identity não encontrado.");
 
-            identityUser.Email = dto.Email;
-            identityUser.UserName = dto.Email;
+            var email = dto.Email.Trim().ToLowerInvariant();
+
+            identityUser.Email = email;
+            identityUser.UserName = email;
 
             var updateResult = await _userManager.UpdateAsync(identityUser);
             if (!updateResult.Succeeded)
@@ -147,12 +191,18 @@ public class UsuarioBLL : IUsuarioBLL
             if (!string.IsNullOrWhiteSpace(dto.Senha))
             {
                 var token = await _userManager.GeneratePasswordResetTokenAsync(identityUser);
-                await _userManager.ResetPasswordAsync(identityUser, token, dto.Senha);
+                var senhaResult = await _userManager.ResetPasswordAsync(identityUser, token, dto.Senha);
+
+                if (!senhaResult.Succeeded)
+                    return new(false, string.Join(" | ", senhaResult.Errors.Select(e => e.Description)));
             }
 
-            dto.DataEdicao = DateTime.UtcNow;
+            usuario.Nome = dto.Nome;
+            usuario.Email = email;
+            usuario.TipoUsuarioId = dto.TipoUsuarioId;
+            usuario.DataEdicao = DateTime.UtcNow;
 
-            await _dal.EditAsync(dto.Id, dto);
+            await _dal.EditAsync(usuario.Id, usuario);
 
             return new(true, "Usuário atualizado.");
         }
@@ -161,7 +211,7 @@ public class UsuarioBLL : IUsuarioBLL
 #if DEBUG
             return new(false, ex.Message);
 #else
-            return new(false, "Erro ao atualizar usuário.");
+        return new(false, "Erro ao atualizar usuário.");
 #endif
         }
     }
@@ -190,5 +240,15 @@ public class UsuarioBLL : IUsuarioBLL
             return new(false, "Erro ao excluir usuário.");
 #endif
         }
+    }
+
+    private string? ResolverNomeRole(int tipoUsuarioId)
+    {
+        return tipoUsuarioId switch
+        {
+            1 => "administrador",
+            2 => "usuario",
+            _ => null
+        };
     }
 }

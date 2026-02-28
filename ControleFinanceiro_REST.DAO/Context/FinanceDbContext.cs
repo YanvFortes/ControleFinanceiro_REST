@@ -228,6 +228,8 @@ public partial class FinanceDbContext : DbContext
 
             entity.Property(e => e.DataCriacao)
                 .HasDefaultValueSql("NOW()");
+            entity.Property(e => e.DataEdicao)
+               .HasDefaultValueSql("NOW()");
 
             entity.HasIndex(e => e.Email)
                 .IsUnique();
