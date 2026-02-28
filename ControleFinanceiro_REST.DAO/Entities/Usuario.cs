@@ -11,7 +11,7 @@ public partial class Usuario
     public DateTime? DataEdicao { get; set; }
 
     public int TipoUsuarioId { get; set; }
-    public Tipousuario TipoUsuario { get; set; } = null!;
+    public Tipousuario? TipoUsuario { get; set; }
 
     public string AspNetUserId { get; set; } = null!;
     public virtual AspNetUser? User { get; set; }

@@ -32,4 +32,18 @@ public class DashboardController : ControllerBase
     [HttpGet("GastosPorPessoa")]
     public async Task<IActionResult> GastosPorPessoa([FromQuery] int dias = 7)
         => Ok(await _bll.ObterGastosPorPessoaAsync(dias));
+
+#if !DEBUG
+    [Authorize]
+#endif
+    [HttpGet("TotaisPorPessoa")]
+    public async Task<IActionResult> TotaisPorPessoa([FromQuery] int dias = 30)
+        => Ok(await _bll.ObterTotaisPorPessoaAsync(dias));
+
+#if !DEBUG
+    [Authorize]
+#endif
+    [HttpGet("TotaisPorCategoria")]
+    public async Task<IActionResult> TotaisPorCategoria([FromQuery] int dias = 30)
+        => Ok(await _bll.ObterTotaisPorCategoriaAsync(dias));
 }

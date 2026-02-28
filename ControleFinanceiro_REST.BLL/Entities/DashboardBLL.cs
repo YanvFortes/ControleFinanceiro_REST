@@ -99,4 +99,84 @@ public class DashboardBLL : IDashboardBLL
             .OrderByDescending(x => x.Valor)
             .ToListAsync();
     }
+
+    public async Task<DashboardTotaisResponseDTO> ObterTotaisPorPessoaAsync(int dias)
+    {
+        var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+        if (usuarioId == null)
+            return new();
+
+        var dataInicio = DateTime.UtcNow.Date.AddDays(-dias);
+
+        var query = _transacaoDAL.GetQuery(true, x => x.Pessoa)
+            .Where(x =>
+                x.UsuarioId == usuarioId &&
+                x.DataCriacao >= dataInicio);
+
+        var agrupado = await query
+            .GroupBy(x => x.Pessoa.Nome)
+            .Select(g => new DashboardTotalItemDTO
+            {
+                Nome = g.Key,
+                TotalReceitas = g
+                    .Where(x => x.Tipo == TipoTransacaoEnum.Receita)
+                    .Sum(x => (decimal?)x.Valor) ?? 0m,
+
+                TotalDespesas = g
+                    .Where(x => x.Tipo == TipoTransacaoEnum.Despesa)
+                    .Sum(x => (decimal?)x.Valor) ?? 0m
+            })
+            .OrderBy(x => x.Nome)
+            .ToListAsync();
+
+        var totalReceitas = agrupado.Sum(x => x.TotalReceitas);
+        var totalDespesas = agrupado.Sum(x => x.TotalDespesas);
+
+        return new DashboardTotaisResponseDTO
+        {
+            Itens = agrupado,
+            TotalReceitas = totalReceitas,
+            TotalDespesas = totalDespesas
+        };
+    }
+
+    public async Task<DashboardTotaisResponseDTO> ObterTotaisPorCategoriaAsync(int dias)
+    {
+        var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
+        if (usuarioId == null)
+            return new();
+
+        var dataInicio = DateTime.UtcNow.Date.AddDays(-dias);
+
+        var query = _transacaoDAL.GetQuery(true, x => x.Categoria)
+            .Where(x =>
+                x.UsuarioId == usuarioId &&
+                x.DataCriacao >= dataInicio);
+
+        var agrupado = await query
+            .GroupBy(x => x.Categoria.Descricao)
+            .Select(g => new DashboardTotalItemDTO
+            {
+                Nome = g.Key,
+                TotalReceitas = g
+                    .Where(x => x.Tipo == TipoTransacaoEnum.Receita)
+                    .Sum(x => (decimal?)x.Valor) ?? 0m,
+
+                TotalDespesas = g
+                    .Where(x => x.Tipo == TipoTransacaoEnum.Despesa)
+                    .Sum(x => (decimal?)x.Valor) ?? 0m
+            })
+            .OrderBy(x => x.Nome)
+            .ToListAsync();
+
+        var totalReceitas = agrupado.Sum(x => x.TotalReceitas);
+        var totalDespesas = agrupado.Sum(x => x.TotalDespesas);
+
+        return new DashboardTotaisResponseDTO
+        {
+            Itens = agrupado,
+            TotalReceitas = totalReceitas,
+            TotalDespesas = totalDespesas
+        };
+    }
 }
