@@ -1,4 +1,4 @@
-# 💰 ControleFinanceiro REST API
+# ControleFinanceiro REST API
 
 Sistema de gestão financeira desenvolvido como desafio técnico.
 
@@ -6,7 +6,7 @@ A aplicação permite controle de receitas e despesas por usuário, categorizaç
 
 ---
 
-# 🏗 Arquitetura
+# Arquitetura
 
 O projeto foi desenvolvido utilizando **arquitetura em camadas**, separando responsabilidades de forma clara e escalável.
 
@@ -50,7 +50,7 @@ Essa separação garante:
 
 ---
 
-# 🛠 Tecnologias Utilizadas
+# Tecnologias Utilizadas
 
 - .NET 8
 - ASP.NET Core Web API
@@ -63,7 +63,7 @@ Essa separação garante:
 
 ---
 
-# 🔐 Autenticação e Segurança
+# Autenticação e Segurança
 
 A autenticação é feita utilizando **ASP.NET Identity + JWT**.
 
@@ -91,9 +91,9 @@ Authorization: Bearer {token}
 
 ---
 
-# 📊 Funcionalidades
+# Funcionalidades
 
-## 👤 Usuários
+## Usuários
 
 - Cadastro de usuário
 - Atualização de dados
@@ -106,7 +106,7 @@ Authorization: Bearer {token}
 
 ---
 
-## 👥 Pessoas
+## Pessoas
 
 - Cadastro de pessoas vinculadas ao usuário
 - Atualização
@@ -120,7 +120,7 @@ Authorization: Bearer {token}
 
 ---
 
-## 🗂 Categorias
+## Categorias
 
 - Cadastro de categorias
 - Definição de finalidade (Receita ou Despesa)
@@ -129,7 +129,7 @@ Authorization: Bearer {token}
 
 ---
 
-## 💳 Transações
+## Transações
 
 - Cadastro de receita ou despesa
 - Vinculação obrigatória a:
@@ -147,7 +147,7 @@ Authorization: Bearer {token}
 
 ---
 
-## 📈 Dashboard
+## Dashboard
 
 ### Resumo
 
@@ -181,7 +181,7 @@ Authorization: Bearer {token}
 
 ---
 
-# 📂 Estrutura do Projeto
+# Estrutura do Projeto
 
 
 ControleFinanceiro_REST.API
@@ -193,15 +193,15 @@ ControleFinanceiro_REST.DTO
 
 ---
 
-# ▶️ Como Executar o Projeto
+# Como Executar o Projeto
 
-## 1️⃣ Clonar repositório
+## 1️ - Clonar repositório
 
 
 git clone https://github.com/seu-repositorio.git
 
 
-## 2️⃣ Configurar banco de dados
+## 2️ - Configurar banco de dados
 
 Editar o `appsettings.json`:
 
@@ -209,14 +209,14 @@ Editar o `appsettings.json`:
 "ConnectionStrings": {
   "DefaultConnection": "Host=localhost;Port=5432;Database=ControleFinanceiro;Username=postgres;Password=senha"
 }
-3️⃣ Aplicar migrations
+3️ - Aplicar migrations
 dotnet ef database update
-4️⃣ Executar aplicação
+4 - Executar aplicação
 dotnet run
 
 Swagger estará disponível em:
 
-https://localhost:{porta}/swagger
+https://localhost:{porta}/swagger/index.html
 📡 Principais Endpoints
 Autenticação
 
@@ -252,7 +252,7 @@ GET /api/Dashboard/GastosPorPessoa
 GET /api/Dashboard/TotaisPorPessoa
 GET /api/Dashboard/TotaisPorCategoria
 
-💡 Decisões Arquiteturais
+- Decisões Arquiteturais
 
 Separação clara entre autenticação (Identity) e domínio (Usuario)
 
@@ -268,7 +268,7 @@ Claims-based authorization
 
 Isolamento total por usuário autenticado
 
-🚀 Diferenciais Técnicos
+- Diferenciais Técnicos
 
 Controle completo de acesso por role
 
@@ -282,7 +282,7 @@ Dashboard com agregações performáticas no banco
 
 Código organizado e preparado para crescimento
 
-📌 Considerações Finais
+- Considerações Finais
 
 O sistema foi desenvolvido com foco em:
 
