@@ -7,6 +7,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ControleFinanceiro_REST.BLL.Entities;
 
+/// <summary>
+/// Camada responsável pela gestão de Roles (perfis de acesso).
+/// 
+/// Atua como intermediária entre a Controller e a DAL,
+/// delegando operações ao Identity através da RoleDAL.
+/// 
+/// Não contém regras complexas de domínio,
+/// pois Role é uma entidade estrutural de controle de acesso.
+/// </summary>
 public class RoleBLL : IRoleBLL
 {
     private readonly IRoleDAL _roleDAL;
@@ -18,6 +27,10 @@ public class RoleBLL : IRoleBLL
         _mapper = mapper;
     }
 
+    /// <summary>
+    /// Retorna roles de forma paginada.
+    /// Permite filtro opcional por nome.
+    /// </summary>
     public async Task<PagedResultDTO<RoleDTO>> ObterPaginadoAsync(
         int page,
         int size,
@@ -25,6 +38,7 @@ public class RoleBLL : IRoleBLL
     {
         var query = _roleDAL.GetQuery();
 
+        // Filtro simples por nome
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(r => r.Name!.Contains(search));
 
@@ -41,6 +55,9 @@ public class RoleBLL : IRoleBLL
         return new PagedResultDTO<RoleDTO>(itens, total, search ?? "");
     }
 
+    /// <summary>
+    /// Retorna role específica pelo Id.
+    /// </summary>
     public async Task<RoleDTO?> ObterPorIdAsync(string id)
     {
         var role = await _roleDAL
@@ -52,6 +69,10 @@ public class RoleBLL : IRoleBLL
             : _mapper.Map<RoleDTO>(role);
     }
 
+    /// <summary>
+    /// Cria novo perfil no sistema.
+    /// Delegado para RoleDAL, que integra com ASP.NET Identity.
+    /// </summary>
     public async Task<RetornoDTO<bool>> CriarAsync(RoleDTO dto)
     {
         try
@@ -65,6 +86,9 @@ public class RoleBLL : IRoleBLL
         }
     }
 
+    /// <summary>
+    /// Atualiza dados de uma role existente.
+    /// </summary>
     public async Task<RetornoDTO<bool>> AtualizarAsync(RoleDTO dto)
     {
         try
@@ -78,6 +102,11 @@ public class RoleBLL : IRoleBLL
         }
     }
 
+    /// <summary>
+    /// Remove role do sistema.
+    /// Regras adicionais (ex: impedir exclusão se houver usuários vinculados)
+    /// podem ser implementadas futuramente nesta camada.
+    /// </summary>
     public async Task<RetornoDTO<bool>> ExcluirAsync(string id)
     {
         try

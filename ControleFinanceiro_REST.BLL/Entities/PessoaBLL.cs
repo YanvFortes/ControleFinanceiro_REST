@@ -9,6 +9,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ControleFinanceiro_REST.BLL.Entities;
 
+/// <summary>
+/// Camada responsável pelas regras de negócio da entidade Pessoa.
+/// 
+/// Pessoa representa um indivíduo vinculado ao usuário logado,
+/// utilizado para agrupamento e análise de transações.
+/// 
+/// Todas as operações garantem isolamento por usuário.
+/// </summary>
 public class PessoaBLL : IPessoaBLL
 {
     private readonly IPessoaDAL _dal;
@@ -25,6 +33,13 @@ public class PessoaBLL : IPessoaBLL
         _mapper = mapper;
     }
 
+    /// <summary>
+    /// Retorna pessoas do usuário autenticado de forma paginada.
+    /// 
+    /// - Aplica filtro textual opcional.
+    /// - Utiliza ILike para busca case-insensitive (PostgreSQL).
+    /// - Usa ProjectTo para otimizar o mapeamento direto no banco.
+    /// </summary>
     public async Task<PagedResultDTO<PessoaDTO>> ObterPaginadoAsync(
         int page,
         int size,
@@ -41,6 +56,7 @@ public class PessoaBLL : IPessoaBLL
         var query = _dal.GetQuery(true)
             .Where(p => p.UsuarioId == usuarioId);
 
+        // Filtro por nome
         if (!string.IsNullOrWhiteSpace(search))
         {
             var like = $"%{search.Trim()}%";
@@ -60,6 +76,10 @@ public class PessoaBLL : IPessoaBLL
         return new PagedResultDTO<PessoaDTO>(itens, total, search ?? "");
     }
 
+    /// <summary>
+    /// Retorna pessoa específica,
+    /// garantindo que pertença ao usuário autenticado.
+    /// </summary>
     public async Task<PessoaDTO?> ObterPorIdAsync(Guid id)
     {
         var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
@@ -72,6 +92,13 @@ public class PessoaBLL : IPessoaBLL
             .FirstOrDefaultAsync();
     }
 
+    /// <summary>
+    /// Cria nova pessoa vinculada ao usuário autenticado.
+    /// 
+    /// Valida:
+    /// - Usuário autenticado
+    /// - Idade não negativa
+    /// </summary>
     public async Task<RetornoDTO<bool>> CriarAsync(PessoaDTO dto)
     {
         try
@@ -96,10 +123,17 @@ public class PessoaBLL : IPessoaBLL
 #if DEBUG
             return new(false, ex.Message);
 #else
-        return new(false, "Erro ao criar pessoa.");
+            return new(false, "Erro ao criar pessoa.");
 #endif
         }
     }
+
+    /// <summary>
+    /// Atualiza dados da pessoa.
+    /// 
+    /// Regra importante:
+    /// Usuário só pode atualizar pessoas que lhe pertencem.
+    /// </summary>
     public async Task<RetornoDTO<bool>> AtualizarAsync(PessoaDTO dto)
     {
         try
@@ -129,11 +163,14 @@ public class PessoaBLL : IPessoaBLL
 #if DEBUG
             return new(false, ex.Message);
 #else
-        return new(false, "Erro ao atualizar pessoa.");
+            return new(false, "Erro ao atualizar pessoa.");
 #endif
         }
     }
 
+    /// <summary>
+    /// Remove pessoa do sistema.
+    /// </summary>
     public async Task<RetornoDTO<bool>> ExcluirAsync(Guid id)
     {
         try
@@ -159,7 +196,7 @@ public class PessoaBLL : IPessoaBLL
 #if DEBUG
             return new(false, ex.Message);
 #else
-        return new(false, "Erro ao excluir pessoa.");
+            return new(false, "Erro ao excluir pessoa.");
 #endif
         }
     }

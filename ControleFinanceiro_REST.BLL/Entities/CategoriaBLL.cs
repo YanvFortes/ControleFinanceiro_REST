@@ -10,6 +10,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ControleFinanceiro_REST.BLL.Entities;
 
+/// <summary>
+/// Camada responsável pelas regras de negócio da entidade Categoria.
+/// Garante isolamento por usuário e validações antes de acessar o banco.
+/// </summary>
 public class CategoriaBLL : ICategoriaBLL
 {
     private readonly ICategoriaDAL _categoriaDAL;
@@ -37,6 +41,11 @@ public class CategoriaBLL : ICategoriaBLL
             .FirstOrDefaultAsync();
     }
 
+    /// <summary>
+    /// Retorna categorias de forma paginada.
+    /// Permite filtro textual na descrição.
+    /// Caso usuarioId seja informado, restringe os resultados ao usuário.
+    /// </summary>
     public async Task<PagedResultDTO<CategoriaDTO>> ObterPaginadoAsync(
         int page,
         int pageSize,
@@ -45,9 +54,11 @@ public class CategoriaBLL : ICategoriaBLL
     {
         var query = _categoriaDAL.GetQuery();
 
+        // Isola as categorias por usuário
         if (usuarioId.HasValue)
             query = query.Where(x => x.UsuarioId == usuarioId.Value);
 
+        // Filtro textual simples na descrição
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.ToLower();
@@ -67,6 +78,13 @@ public class CategoriaBLL : ICategoriaBLL
         return new PagedResultDTO<CategoriaDTO>(itens, total, search ?? "");
     }
 
+    /// <summary>
+    /// Cria uma nova categoria vinculada ao usuário autenticado.
+    /// Valida:
+    /// - Descrição obrigatória
+    /// - Usuário autenticado
+    /// - Não permitir categorias duplicadas para o mesmo usuário
+    /// </summary>
     public async Task<RetornoDTO<bool>> CriarAsync(CategoriaDTO dto)
     {
         try
@@ -78,6 +96,7 @@ public class CategoriaBLL : ICategoriaBLL
             if (usuarioId == null)
                 return new(false, "Usuário não identificado.");
 
+            // Impede duplicidade de categoria por usuário
             var existe = await _categoriaDAL
                 .GetQuery()
                 .AnyAsync(x =>
@@ -129,6 +148,10 @@ public class CategoriaBLL : ICategoriaBLL
         }
     }
 
+    /// <summary>
+    /// Exclui categoria somente se não houver transações vinculadas.
+    /// Garante integridade de dados e evita inconsistências históricas.
+    /// </summary>
     public async Task<RetornoDTO<bool>> ExcluirAsync(Guid id)
     {
         try

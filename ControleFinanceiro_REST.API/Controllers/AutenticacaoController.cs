@@ -5,16 +5,26 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ControleFinanceiro_REST.API.Controllers;
 
+/// <summary>
+/// Controller responsável pela autenticação.
+/// 
+/// Responsável apenas por receber credenciais e
+/// delegar geração de token para a BLL.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class AutenticacaoController : ControllerBase
 {
     private readonly IAutenticacaoBLL BLL;
+
     public AutenticacaoController(IAutenticacaoBLL bll)
     {
         BLL = bll;
     }
 
+    /// <summary>
+    /// Realiza login e retorna token JWT em caso de sucesso.
+    /// </summary>
     [AllowAnonymous]
     [HttpPost("Login")]
     public async Task<IActionResult> Login(AutenticacaoDTO entrada)

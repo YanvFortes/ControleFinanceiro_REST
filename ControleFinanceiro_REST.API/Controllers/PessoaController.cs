@@ -6,6 +6,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ControleFinanceiro_REST.API.Controllers;
 
+/// <summary>
+/// Controller responsável pela gestão de Pessoas.
+/// 
+/// Pessoa representa um indivíduo vinculado a um usuário,
+/// utilizado para agrupamento de transações.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class PessoasController : ControllerBase
@@ -18,6 +24,9 @@ public class PessoasController : ControllerBase
 #if !DEBUG
     [Authorize]
 #endif
+    /// <summary>
+    /// Lista pessoas de forma paginada.
+    /// </summary>
     [HttpGet("Get")]
     public async Task<ActionResult<PagedResultDTO<PessoaDTO>>> Listar(
         [FromQuery] int page = 1,
@@ -31,6 +40,9 @@ public class PessoasController : ControllerBase
 #if !DEBUG
     [Authorize]
 #endif
+    /// <summary>
+    /// Retorna pessoa pelo Id.
+    /// </summary>
     [HttpGet("GetById/{id:guid}")]
     public async Task<ActionResult<PessoaDTO>> Obter(Guid id)
     {
@@ -45,8 +57,12 @@ public class PessoasController : ControllerBase
 #if !DEBUG
     [Authorize]
 #endif
+    /// <summary>
+    /// Cria nova pessoa vinculada ao usuário autenticado.
+    /// </summary>
     [HttpPost("Cadastrar")]
-    public async Task<ActionResult<RetornoDTO<bool>>> Cadastrar([FromBody] PessoaDTO dto)
+    public async Task<ActionResult<RetornoDTO<bool>>> Cadastrar(
+        [FromBody] PessoaDTO dto)
     {
         var retorno = await _pessoaBll.CriarAsync(dto);
         return Ok(retorno);
@@ -55,8 +71,13 @@ public class PessoasController : ControllerBase
 #if !DEBUG
     [Authorize]
 #endif
+    /// <summary>
+    /// Atualiza dados da pessoa.
+    /// </summary>
     [HttpPut("Editar/{id:guid}")]
-    public async Task<ActionResult<RetornoDTO<bool>>> Editar(Guid id, [FromBody] PessoaDTO dto)
+    public async Task<ActionResult<RetornoDTO<bool>>> Editar(
+        Guid id,
+        [FromBody] PessoaDTO dto)
     {
         dto.Id = id;
         return Ok(await _pessoaBll.AtualizarAsync(dto));
@@ -65,9 +86,10 @@ public class PessoasController : ControllerBase
 #if !DEBUG
     [Authorize]
 #endif
+    /// <summary>
+    /// Remove pessoa do sistema.
+    /// </summary>
     [HttpDelete("Deletar/{id:guid}")]
     public async Task<ActionResult<RetornoDTO<bool>>> Delete(Guid id)
-    {
-        return Ok(await _pessoaBll.ExcluirAsync(id));
-    }
+        => Ok(await _pessoaBll.ExcluirAsync(id));
 }

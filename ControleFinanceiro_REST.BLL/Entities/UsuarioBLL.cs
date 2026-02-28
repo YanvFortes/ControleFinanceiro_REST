@@ -12,6 +12,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ControleFinanceiro_REST.BLL.Entities;
 
+/// <summary>
+/// Camada responsável pelas regras de negócio da entidade Usuário.
+/// 
+/// Esta implementação integra:
+/// - ASP.NET Identity (controle de autenticação e senha)
+/// - Tabela própria Usuario (regras de domínio da aplicação)
+/// 
+/// Garante:
+/// - Isolamento por role (admin x usuário comum)
+/// - Sincronização entre Identity e base de domínio
+/// - Controle de permissões
+/// </summary>
 public class UsuarioBLL : IUsuarioBLL
 {
     private readonly IUsuarioDAL _dal;
@@ -34,6 +46,13 @@ public class UsuarioBLL : IUsuarioBLL
         _roleManager = roleManager;
     }
 
+    /// <summary>
+    /// Retorna usuários de forma paginada.
+    /// 
+    /// Regra:
+    /// - Administrador pode visualizar todos os usuários.
+    /// - Usuário comum pode visualizar apenas seu próprio registro.
+    /// </summary>
     public async Task<PagedResultDTO<UsuarioDTO>> ObterPaginadoAsync(
         int page,
         int size,
@@ -60,10 +79,9 @@ public class UsuarioBLL : IUsuarioBLL
 
         var query = _dal.GetQuery(true);
 
+        // Restrição de visibilidade para usuários não administradores
         if (!isAdmin)
-        {
             query = query.Where(x => x.Id == usuarioId);
-        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -85,6 +103,13 @@ public class UsuarioBLL : IUsuarioBLL
         return new(itens, total, search ?? "");
     }
 
+    /// <summary>
+    /// Retorna usuário específico.
+    /// 
+    /// Regra:
+    /// - Admin pode consultar qualquer usuário.
+    /// - Usuário comum apenas o próprio registro.
+    /// </summary>
     public async Task<UsuarioDTO?> ObterPorIdAsync(Guid id)
     {
         var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
@@ -112,6 +137,15 @@ public class UsuarioBLL : IUsuarioBLL
             .FirstOrDefaultAsync();
     }
 
+    /// <summary>
+    /// Cria novo usuário.
+    /// 
+    /// Fluxo:
+    /// 1. Cria usuário no ASP.NET Identity.
+    /// 2. Garante existência da role.
+    /// 3. Vincula role ao usuário.
+    /// 4. Persiste usuário na tabela de domínio.
+    /// </summary>
     public async Task<RetornoDTO<bool>> CriarAsync(CriarUsuarioRequestDTO dto)
     {
         try
@@ -162,11 +196,18 @@ public class UsuarioBLL : IUsuarioBLL
 #if DEBUG
             return new(false, ex.Message);
 #else
-        return new(false, "Erro ao criar usuário.");
+            return new(false, "Erro ao criar usuário.");
 #endif
         }
     }
 
+    /// <summary>
+    /// Atualiza dados do usuário.
+    /// 
+    /// - Atualiza dados no Identity (email e senha).
+    /// - Atualiza dados na tabela de domínio.
+    /// - Reset de senha é feito via token seguro.
+    /// </summary>
     public async Task<RetornoDTO<bool>> AtualizarAsync(AtualizarUsuarioRequestDTO dto)
     {
         try
@@ -211,11 +252,17 @@ public class UsuarioBLL : IUsuarioBLL
 #if DEBUG
             return new(false, ex.Message);
 #else
-        return new(false, "Erro ao atualizar usuário.");
+            return new(false, "Erro ao atualizar usuário.");
 #endif
         }
     }
 
+    /// <summary>
+    /// Remove usuário do sistema.
+    /// 
+    /// Remove primeiro do Identity e depois da base de domínio,
+    /// mantendo consistência entre autenticação e regras de negócio.
+    /// </summary>
     public async Task<RetornoDTO<bool>> ExcluirAsync(Guid id)
     {
         try
@@ -242,6 +289,10 @@ public class UsuarioBLL : IUsuarioBLL
         }
     }
 
+    /// <summary>
+    /// Converte identificador numérico do domínio
+    /// para nome da role utilizada no Identity.
+    /// </summary>
     private string? ResolverNomeRole(int tipoUsuarioId)
     {
         return tipoUsuarioId switch
