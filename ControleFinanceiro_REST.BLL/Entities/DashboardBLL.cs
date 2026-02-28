@@ -7,6 +7,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ControleFinanceiro_REST.BLL.Entities;
 
+/// <summary>
+/// Responsável por consultas agregadas do Dashboard.
+/// 
+/// Esta camada executa apenas operações de leitura.
+/// Todas as consultas são filtradas pelo usuário autenticado,
+/// garantindo isolamento de dados.
+/// 
+/// As agregações são realizadas diretamente no banco (via LINQ → SQL),
+/// evitando processamento desnecessário em memória.
+/// </summary>
 public class DashboardBLL : IDashboardBLL
 {
     private readonly ITransacaoDAL _transacaoDAL;
@@ -20,12 +30,17 @@ public class DashboardBLL : IDashboardBLL
         _usuarioContexto = usuarioContexto;
     }
 
+    /// <summary>
+    /// Retorna resumo financeiro do período informado.
+    /// Calcula total de receitas e despesas.
+    /// </summary>
     public async Task<DashboardResumoDTO> ObterResumoAsync(int dias)
     {
         var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
         if (usuarioId == null)
             return new DashboardResumoDTO();
 
+        // Define período dinâmico baseado na data atual
         var dataInicio = DateTime.UtcNow.Date.AddDays(-dias);
 
         var query = _transacaoDAL.GetQuery()
@@ -33,10 +48,12 @@ public class DashboardBLL : IDashboardBLL
                 x.UsuarioId == usuarioId &&
                 x.DataCriacao >= dataInicio);
 
+        // Soma receitas diretamente no banco
         var receitas = await query
             .Where(x => x.Tipo == TipoTransacaoEnum.Receita)
             .SumAsync(x => (decimal?)x.Valor) ?? 0m;
 
+        // Soma despesas diretamente no banco
         var despesas = await query
             .Where(x => x.Tipo == TipoTransacaoEnum.Despesa)
             .SumAsync(x => (decimal?)x.Valor) ?? 0m;
@@ -48,6 +65,10 @@ public class DashboardBLL : IDashboardBLL
         };
     }
 
+    /// <summary>
+    /// Retorna gastos agrupados por dia.
+    /// Utilizado para gráficos temporais.
+    /// </summary>
     public async Task<List<DashboardGraficoDiaDTO>> ObterGastosPorDiaAsync(int dias)
     {
         var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
@@ -70,6 +91,7 @@ public class DashboardBLL : IDashboardBLL
             .OrderBy(x => x.Data)
             .ToListAsync();
 
+        // Conversão para DTO apenas após execução da query
         return dados.Select(x => new DashboardGraficoDiaDTO
         {
             Data = x.Data.ToString("dd/MM"),
@@ -77,6 +99,10 @@ public class DashboardBLL : IDashboardBLL
         }).ToList();
     }
 
+    /// <summary>
+    /// Retorna gastos agrupados por pessoa.
+    /// Utilizado para gráficos de distribuição.
+    /// </summary>
     public async Task<List<DashboardGraficoPessoaDTO>> ObterGastosPorPessoaAsync(int dias)
     {
         var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
@@ -100,6 +126,14 @@ public class DashboardBLL : IDashboardBLL
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Retorna totais por pessoa:
+    /// - Total de receitas
+    /// - Total de despesas
+    /// - Saldo implícito (Receita - Despesa)
+    /// 
+    /// Inclui também total geral consolidado.
+    /// </summary>
     public async Task<DashboardTotaisResponseDTO> ObterTotaisPorPessoaAsync(int dias)
     {
         var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
@@ -118,6 +152,7 @@ public class DashboardBLL : IDashboardBLL
             .Select(g => new DashboardTotalItemDTO
             {
                 Nome = g.Key,
+
                 TotalReceitas = g
                     .Where(x => x.Tipo == TipoTransacaoEnum.Receita)
                     .Sum(x => (decimal?)x.Valor) ?? 0m,
@@ -129,6 +164,7 @@ public class DashboardBLL : IDashboardBLL
             .OrderBy(x => x.Nome)
             .ToListAsync();
 
+        // Total consolidado calculado após agregação individual
         var totalReceitas = agrupado.Sum(x => x.TotalReceitas);
         var totalDespesas = agrupado.Sum(x => x.TotalDespesas);
 
@@ -140,6 +176,10 @@ public class DashboardBLL : IDashboardBLL
         };
     }
 
+    /// <summary>
+    /// Retorna totais agrupados por categoria,
+    /// incluindo consolidação geral.
+    /// </summary>
     public async Task<DashboardTotaisResponseDTO> ObterTotaisPorCategoriaAsync(int dias)
     {
         var usuarioId = await _usuarioContexto.ObterUsuarioIdAsync();
@@ -158,6 +198,7 @@ public class DashboardBLL : IDashboardBLL
             .Select(g => new DashboardTotalItemDTO
             {
                 Nome = g.Key,
+
                 TotalReceitas = g
                     .Where(x => x.Tipo == TipoTransacaoEnum.Receita)
                     .Sum(x => (decimal?)x.Valor) ?? 0m,

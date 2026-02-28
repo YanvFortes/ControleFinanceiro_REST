@@ -1,8 +1,15 @@
 ﻿using ControleFinanceiro_REST.BLL.Utils.Interfaces;
+
 using Microsoft.AspNetCore.Http;
 
-namespace ControleFinanceiro_REST.BLL.Utils;
-
+/// <summary>
+/// Responsável por acessar informações do token
+/// diretamente do HttpContext atual.
+/// 
+/// Permite recuperar:
+/// - Token bruto
+/// - Claims específicas
+/// </summary>
 public class TokenContexto : ITokenContexto
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -14,13 +21,21 @@ public class TokenContexto : ITokenContexto
 
     public string? ObterToken()
     {
-        var header = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"].FirstOrDefault();
+        var header = _httpContextAccessor
+            .HttpContext?
+            .Request
+            .Headers["Authorization"]
+            .FirstOrDefault();
+
         return header?.Replace("Bearer ", "");
     }
 
     public string? ObterClaim(string nome)
     {
-        var claim = _httpContextAccessor.HttpContext?.User?.Claims.FirstOrDefault(c => c.Type == nome);
-        return claim?.Value;
+        return _httpContextAccessor
+            .HttpContext?
+            .User?
+            .Claims
+            .FirstOrDefault(c => c.Type == nome)?.Value;
     }
 }
