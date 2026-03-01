@@ -42,24 +42,24 @@ Componentes de autenticação, criptografia e contexto de usuário.
 
 Essa separação garante:
 
-- Baixo acoplamento
-- Alta coesão
-- Facilidade de manutenção
-- Escalabilidade futura
-- Clareza arquitetural
+• Baixo acoplamento
+• Alta coesão
+• Facilidade de manutenção
+• Escalabilidade futura
+• Clareza arquitetural
 
 ---
 
 # Tecnologias Utilizadas
 
-- .NET 8
-- ASP.NET Core Web API
-- Entity Framework Core
-- PostgreSQL
-- ASP.NET Identity
-- JWT (JSON Web Token)
-- AutoMapper
-- Swagger / OpenAPI
+• .NET 8
+• ASP.NET Core Web API
+• Entity Framework Core
+• PostgreSQL
+• ASP.NET Identity
+• JWT (JSON Web Token)
+• AutoMapper
+• Swagger / OpenAPI
 
 ---
 
@@ -83,11 +83,11 @@ Authorization: Bearer {token}
 
 ## Segurança implementada
 
-- Isolamento total de dados por usuário
-- Controle de acesso por role (Administrador x Usuário)
-- Validação completa do token (issuer, audience, assinatura e expiração)
-- Reset de senha via token seguro
-- Separação entre base de autenticação (Identity) e base de domínio (Usuario)
+• Isolamento total de dados por usuário
+• Controle de acesso por role (Administrador x Usuário)
+• Validação completa do token (issuer, audience, assinatura e expiração)
+• Reset de senha via token seguro
+• Separação entre base de autenticação (Identity) e base de domínio (Usuario)
 
 ---
 
@@ -95,12 +95,12 @@ Authorization: Bearer {token}
 
 ## Usuários
 
-- Cadastro de usuário
-- Atualização de dados
-- Reset de senha
-- Exclusão
-- Paginação com filtro
-- Controle de visualização:
+• Cadastro de usuário
+• Atualização de dados
+• Reset de senha
+• Exclusão
+• Paginação com filtro
+• Controle de visualização:
   - Administrador visualiza todos
   - Usuário comum visualiza apenas o próprio registro
 
@@ -108,42 +108,42 @@ Authorization: Bearer {token}
 
 ## Pessoas
 
-- Cadastro de pessoas vinculadas ao usuário
-- Atualização
-- Exclusão
-- Paginação
-- Isolamento por usuário
+• Cadastro de pessoas vinculadas ao usuário
+• Atualização
+• Exclusão
+• Paginação
+• Isolamento por usuário
 
 ### Regra de negócio
 
-- Menores de idade não podem registrar receitas.
+• Menores de idade não podem registrar receitas.
 
 ---
 
 ## Categorias
 
-- Cadastro de categorias
-- Definição de finalidade (Receita ou Despesa)
-- Não permite exclusão se houver transações vinculadas
-- Isolamento por usuário
+• Cadastro de categorias
+• Definição de finalidade (Receita ou Despesa)
+• Não permite exclusão se houver transações vinculadas
+• Isolamento por usuário
 
 ---
 
 ## Transações
 
-- Cadastro de receita ou despesa
-- Vinculação obrigatória a:
+• Cadastro de receita ou despesa
+• Vinculação obrigatória a:
   - Pessoa
   - Categoria
-- Validações:
+• Validações:
   - Valor deve ser maior que zero
   - Pessoa deve pertencer ao usuário
   - Categoria deve pertencer ao usuário
   - Data não pode ser futura
   - Tipo da transação é definido pela categoria
-- Paginação
-- Atualização
-- Exclusão
+• Paginação
+• Atualização
+• Exclusão
 
 ---
 
@@ -151,45 +151,33 @@ Authorization: Bearer {token}
 
 ### Resumo
 
-- Total de receitas
-- Total de despesas
-- Saldo consolidado
+• Total de receitas
+• Total de despesas
+• Saldo consolidado
 
 ### Gastos por dia
 
-- Agrupamento por data
-- Consulta por período
+• Agrupamento por data
+• Consulta por período
 
 ### Gastos por pessoa
 
-- Agrupamento por pessoa
-- Ordenado por maior valor
+• Agrupamento por pessoa
+• Ordenado por maior valor
 
 ### Totais por Pessoa
 
-- Receita total
-- Despesa total
-- Saldo individual
-- Total geral consolidado
+• Receita total
+• Despesa total
+• Saldo individual
+• Total geral consolidado
 
 ### Totais por Categoria
 
-- Receita total
-- Despesa total
-- Saldo por categoria
-- Total geral consolidado
-
----
-
-# Estrutura do Projeto
-
-
-ControleFinanceiro_REST.API
-ControleFinanceiro_REST.BLL
-ControleFinanceiro_REST.DAL
-ControleFinanceiro_REST.DAO
-ControleFinanceiro_REST.DTO
-
+• Receita total
+• Despesa total
+• Saldo por categoria
+• Total geral consolidado
 
 ---
 
@@ -209,15 +197,19 @@ Editar o `appsettings.json`:
 "ConnectionStrings": {
   "DefaultConnection": "Host=localhost;Port=5432;Database=ControleFinanceiro;Username=postgres;Password=senha"
 }
-3️ - Aplicar migrations
+```
+
+## 3️ - Aplicar migrations
 dotnet ef database update
-4 - Executar aplicação
+
+## 4 - Executar aplicação
 dotnet run
 
-Swagger estará disponível em:
+# Swagger estará disponível em:
 
 https://localhost:{porta}/swagger/index.html
-📡 Principais Endpoints
+
+# Principais Endpoints
 Autenticação
 
 POST /api/Autenticacao/Login
@@ -233,16 +225,22 @@ Pessoas
 
 GET /api/Pessoas/Get
 POST /api/Pessoas/Cadastrar
+PUT /api/Usuarios/Editar/{id}
+DELETE /api/Usuarios/Deletar/{id}
 
 Categorias
 
 GET /api/Categorias/Get
 POST /api/Categorias/Cadastrar
+PUT /api/Usuarios/Editar/{id}
+DELETE /api/Usuarios/Deletar/{id}
 
 Transações
 
 GET /api/Transacoes/Get
 POST /api/Transacoes/Cadastrar
+PUT /api/Usuarios/Editar/{id}
+DELETE /api/Usuarios/Deletar/{id}
 
 Dashboard
 
@@ -252,46 +250,32 @@ GET /api/Dashboard/GastosPorPessoa
 GET /api/Dashboard/TotaisPorPessoa
 GET /api/Dashboard/TotaisPorCategoria
 
-- Decisões Arquiteturais
+# Decisões Arquiteturais
 
-Separação clara entre autenticação (Identity) e domínio (Usuario)
+• Separação clara entre autenticação (Identity) e domínio (Usuario)
 
-Paginação eficiente via LINQ + ProjectTo
+• Paginação eficiente via LINQ + ProjectTo
 
-Validações de negócio centralizadas na BLL
+• Validações de negócio centralizadas na BLL
 
-DAL genérico reutilizável
+• DAL genérico reutilizável
 
-DTO para evitar exposição direta de entidades
+• DTO para evitar exposição direta de entidades
 
-Claims-based authorization
+• Claims-based authorization
 
-Isolamento total por usuário autenticado
+• Isolamento total por usuário autenticado
 
-- Diferenciais Técnicos
+# Diferenciais Técnicos
 
-Controle completo de acesso por role
+• Controle completo de acesso por role
 
-Integração estruturada com ASP.NET Identity
+• Integração estruturada com ASP.NET Identity
 
-JWT com validação completa
+• JWT com validação completa
 
-Regras de domínio reais
+• Regras de domínio reais
 
-Dashboard com agregações performáticas no banco
+• Dashboard com agregações performáticas no banco
 
-Código organizado e preparado para crescimento
-
-- Considerações Finais
-
-O sistema foi desenvolvido com foco em:
-
-Clareza arquitetural
-
-Segurança
-
-Boas práticas
-
-Separação de responsabilidades
-
-Escalabilidade futura
+• Código organizado e preparado para crescimento
