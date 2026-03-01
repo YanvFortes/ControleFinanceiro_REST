@@ -156,17 +156,16 @@ public class TransacaoBLL : ITransacaoBLL
             // Caso não informado, assume data atual
             if (dataCriacao == default)
             {
-                dataCriacao = DateTime.Now;
+                dataCriacao = DateTime.UtcNow;
             }
             else
             {
-                // Impede registro futuro
-                if (dataCriacao > DateTime.Now)
+                if (dataCriacao.ToUniversalTime() > DateTime.UtcNow)
                     return new(false, "Data da transação não pode ser futura.");
             }
 
-            // Ajuste de fuso horário (caso aplicação rode em UTC)
-            dto.DataCriacao = dataCriacao.AddHours(3);
+            // Garante que será salvo como UTC
+            dto.DataCriacao = DateTime.SpecifyKind(dataCriacao, DateTimeKind.Utc);
 
             await _transacaoDAL.CreateAsync(dto);
 
@@ -189,11 +188,15 @@ public class TransacaoBLL : ITransacaoBLL
     {
         try
         {
-            var existente = await _transacaoDAL.GetByIdAsync(dto.Id);
+            var existente = await _transacaoDAL.GetQuery(false)
+                .FirstOrDefaultAsync(x => x.Id == dto.Id);
+
             if (existente is null)
                 return new(false, "Transação não encontrada.");
 
-            dto.DataEdicao = DateTime.Now;
+            dto.UsuarioId = existente.UsuarioId;
+            dto.DataCriacao = existente.DataCriacao;
+            dto.DataEdicao = DateTime.UtcNow;
 
             await _transacaoDAL.EditAsync(dto.Id, dto);
 
@@ -204,7 +207,7 @@ public class TransacaoBLL : ITransacaoBLL
 #if DEBUG
             return new(false, ex.Message);
 #else
-            return new(false, "Erro ao atualizar transação.");
+        return new(false, "Erro ao atualizar transação.");
 #endif
         }
     }
